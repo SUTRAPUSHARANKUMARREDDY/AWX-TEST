@@ -6,8 +6,11 @@
     mysql_user: "root"
     mysql_password: "GaianAdmin8086MySQL"
     mysql_host: "192.168.28.13"
+    mysql_database: "Xcode_db"  # Specifying MySQL database name
     mongo_uri: "mongodb://mobius:GaianAdmin8086@192.168.28.3:27017,192.168.28.6:27017,192.168.28.7:27017/?authSource=admin&replicaSet=my_mongodb_0"
+    mongo_database: "marketplace_alpha"  # Specifying MongoDB database name
     postgres_user: "postgres"
+    postgres_database: "grafana"  # Specifying only the PostgreSQL database to backup
     az_account_name: "prodmobiusdbbkp"
     az_container_name: "devbackup"
     az_sas_token: "?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
@@ -22,27 +25,21 @@
         - mongo
         - psql
 
-    - name: MySQL Backup
+    - name: MySQL Backup for Specific Database
       shell: |
-        databases=$(mysql -u {{ mysql_user }} -p"{{ mysql_password }}" -h {{ mysql_host }} -e "SHOW DATABASES;" | tr -d "| " | grep -v Database)
-        for db in $databases; do
-          if [[ "$db" != "information_schema" ]] && [[ "$db" != "performance_schema" ]] && [[ "$db" != "mysql" ]] && [[ "$db" != "sys" ]] && [[ "$db" != _* ]] ; then
-            echo "Dumping database: $db"
-            mysqldump -u {{ mysql_user }} -p"{{ mysql_password }}" -h {{ mysql_host }} --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "/home/gaian/{{ backup_date }}_DB_Backup/mysql/$db.sql"
-          fi
-        done
+        echo "Dumping database: {{ mysql_database }}"
+        mysqldump -u {{ mysql_user }} -p"{{ mysql_password }}" -h {{ mysql_host }} --set-gtid-purged=OFF --skip-lock-tables --databases "{{ mysql_database }}" > "/home/gaian/{{ backup_date }}_DB_Backup/mysql/{{ mysql_database }}.sql"
       args:
         executable: /bin/bash
       become: yes
 
-    - name: MongoDB Backup
-      shell: mongodump --uri="{{ mongo_uri }}" --out="/home/gaian/{{ backup_date }}_DB_Backup/mongo/"
+    - name: MongoDB Backup for Specific Database
+      shell: mongodump --uri="{{ mongo_uri }}" --db="{{ mongo_database }}" --out="/home/gaian/{{ backup_date }}_DB_Backup/mongo/"
       become: yes
 
-    - name: PostgreSQL Backup
+    - name: PostgreSQL Backup for Specific Database
       shell: |
-        pg_dump -U {{ postgres_user }} -Ft targettingframework -f "/home/gaian/{{ backup_date }}_DB_Backup/psql/targettingframework_backup.tar"
-        pg_dump -U {{ postgres_user }} -Ft grafana -f "/home/gaian/{{ backup_date }}_DB_Backup/psql/grafana_backup.tar"
+        pg_dump -U {{ postgres_user }} -Ft {{ postgres_database }} -f "/home/gaian/{{ backup_date }}_DB_Backup/psql/{{ postgres_database }}_backup.tar"
       become: yes
 
     - name: Archive each database backup directory
