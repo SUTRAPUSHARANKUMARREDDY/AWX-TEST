@@ -2,15 +2,15 @@
 - name: Database Backup and Upload
   hosts: all
   vars:
-    backup_date: "{{ lookup('pipe', 'date +%b-%d') }}"
+    backup_date: "{{ lookup('pipe', 'date +%Y-%b-%d') }}"  # Using a full date format
     mysql_user: "root"
     mysql_password: "GaianAdmin8086MySQL"
     mysql_host: "192.168.28.13"
-    mysql_database: "Xcode_db"  # Specifying MySQL database name
+    mysql_database: "Xcode_db"
     mongo_uri: "mongodb://mobius:GaianAdmin8086@192.168.28.3:27017,192.168.28.6:27017,192.168.28.7:27017/?authSource=admin&replicaSet=my_mongodb_0"
-    mongo_database: "marketplace_alpha"  # Specifying MongoDB database name
+    mongo_database: "marketplace_alpha"
     postgres_user: "postgres"
-    postgres_database: "grafana"  # Specifying only the PostgreSQL database to backup
+    postgres_database: "grafana"
     az_account_name: "prodmobiusdbbkp"
     az_container_name: "devbackup"
     az_sas_token: "?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
@@ -43,7 +43,17 @@
       become: yes
 
     - name: Archive each database backup directory
-      shell: tar -czvf "/home/gaian/{{ backup_date }}_{{ item }}_backup.tar.gz" -C "/home/gaian/{{ backup_date }}_DB_Backup" {{ item }}
+      shell: tar -czvf "/home/gaian/{{ backup_date }}_DB_Backup/{{ backup_date }}_{{ item }}_backup.tar.gz" -C "/home/gaian/{{ backup_date }}_DB_Backup" {{ item }}
+      loop:
+        - mysql
+        - mongo
+        - psql
+      become: yes
+
+    - name: Remove original backup directories after archiving
+      file:
+        path: "/home/gaian/{{ backup_date }}_DB_Backup/{{ item }}"
+        state: absent
       loop:
         - mysql
         - mongo
@@ -51,9 +61,9 @@
       become: yes
 
     - name: Archive the entire backup directory
-      shell: tar -czvf "/home/gaian/{{ backup_date }}_DB_Backup.tar.gz" -C "/home/gaian" "{{ backup_date }}_DB_Backup/"
+      shell: tar -czvf "/home/gaian/{{ backup_date }}_dbs_backup.tar.gz" -C "/home/gaian" "{{ backup_date }}_DB_Backup"
       become: yes
 
     - name: Upload backup to Azure Blob Storage
-      shell: azcopy copy '/home/gaian/{{ backup_date }}_DB_Backup.tar.gz' 'https://{{ az_account_name }}.blob.core.windows.net/{{ az_container_name }}{{ az_sas_token }}' --from-to LocalBlob
+      shell: azcopy copy '/home/gaian/{{ backup_date }}_dbs_backup.tar.gz' 'https://{{ az_account_name }}.blob.core.windows.net/{{ az_container_name }}{{ az_sas_token }}' --from-to LocalBlob
       become: yes
