@@ -14,6 +14,9 @@
         path: "{{ backup_dir }}"
         state: directory
 
+    # Assuming the dump user has enough privileges to execute the dumps and azcopy without escalation
+    # Remove 'become: true' from tasks where it's not necessary or causing issues
+    
     - name: Dump MySQL databases
       shell: |
         USER="mysql"
@@ -26,50 +29,34 @@
         done
       args:
         executable: /bin/bash
-      become: true
+      # Adjust based on your system's requirements
 
     - name: Dump MongoDB databases
       shell: mongodump --uri="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=my_mongodb_0" --out="{{ backup_dir }}/mongo/"
-      become: true
+      # Adjust based on your system's requirements
 
     - name: Dump PostgreSQL databases
       shell: |
         pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft targettingframework -f "{{ backup_dir }}/psql/targettingframework_backup.tar"
         pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft grafana -f "{{ backup_dir }}/psql/grafana_backup.tar"
-      become: true
       environment:
         PGPASSWORD: "Gaian$%Mobiu$Pr0d"
+      # Adjust based on your system's requirements
 
     - name: Compress MySQL backups
       shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz" -C "{{ backup_dir }}" mysql
-      become: true
 
     - name: Compress MongoDB backups
       shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mongo_backup.tar.gz" -C "{{ backup_dir }}" mongo
-      become: true
 
     - name: Compress PostgreSQL backups
       shell: tar -czvf "{{ backup_dir }}/{{ current_date }}psql_backup.tar.gz" -C "{{ backup_dir }}" psql
-      become: true
 
     - name: Upload MySQL backup to Azure Blob using azcopy
       shell: azcopy copy '{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz' '{{ azure_blob_sas_url_mysql }}' --recursive=true
-      become: true
 
     - name: Upload MongoDB backup to Azure Blob using azcopy
       shell: azcopy copy '{{ backup_dir }}/{{ current_date }}mongo_backup.tar.gz' '{{ azure_blob_sas_url_mongodb }}' --recursive=true
-      become: true
 
     - name: Upload PostgreSQL backup to Azure Blob using azcopy
       shell: azcopy copy '{{ backup_dir }}/{{ current_date }}psql_backup.tar.gz' '{{ azure_blob_sas_url_postgres }}' --recursive=true
-      become: true
-
-    - name: Cleanup temporary database dump directories
-      ansible.builtin.file:
-        path: "{{ backup_dir }}/{{ item }}"
-        state: absent
-      loop:
-        - mysql
-        - mongo
-        - psql
-      become: true
