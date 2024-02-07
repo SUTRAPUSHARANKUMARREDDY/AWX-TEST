@@ -23,21 +23,22 @@
         - mongo
         - psql
 
-    - name: Dump MySQL databases
-      shell: |
-        USER="mysql"
-        PASSWORD="Gaian-M0bIusP#9Pr0d"
-        HOST="mobius-prod-mysql-new-flexible-server.mysql.database.azure.com"
-        databases=$(mysql -u $USER -p"$PASSWORD" -h $HOST -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys)")
-        for db in $databases; do
-          echo "Dumping database: $db"
-          mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "{{ backup_dir }}/mysql/$db.sql"
-        done
-      args:
-        executable: /bin/bash
+    #- name: Dump MySQL databases
+     # shell: |
+      #  USER="mysql"
+       # PASSWORD="Gaian-M0bIusP#9Pr0d"
+        #HOST="mobius-prod-mysql-new-flexible-server.mysql.database.azure.com"
+        #databases=$(mysql -u $USER -p"$PASSWORD" -h $HOST -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys)")
+        #for db in $databases; do
+         # echo "Dumping database: $db"
+          #mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "{{ backup_dir }}/mysql/$db.sql"
+        #done
+      #args:
+        #executable: /bin/bash
 
     - name: Dump MongoDB databases
-      shell: mongodump --uri="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=my_mongodb_0" --out="{{ backup_dir }}/mongo/"
+      shell: mongodump --uri="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0" --out="{{ backup_dir }}/mongo/"
+
 
     - name: Dump PostgreSQL databases
       shell: |
