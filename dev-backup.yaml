@@ -59,15 +59,15 @@
     # Upload Tasks Using ansible.builtin.command
     - name: Upload MySQL backup to Azure Blob using azcopy
       ansible.builtin.command:
-        cmd: "sudo azcopy copy '{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz' '{{ azure_blob_sas_url_mysql }}' --recursive=true"
+        cmd: "azcopy copy '{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz' '{{ azure_blob_sas_url_mysql }}' --recursive=true"
       become: yes
 
     - name: Upload MongoDB backup to Azure Blob using azcopy
       ansible.builtin.command:
-        cmd: "sudo azcopy copy '{{ backup_dir }}/{{ current_date }}mongo_backup.tar.gz' '{{ azure_blob_sas_url_mongodb }}' --recursive=true"
+        cmd: "azcopy copy '{{ backup_dir }}/{{ current_date }}mongo_backup.tar.gz' '{{ azure_blob_sas_url_mongodb }}' --recursive=true"
       become: yes
 
     - name: Upload PostgreSQL backup to Azure Blob using azcopy
       ansible.builtin.command:
-        cmd: "sudo azcopy copy '{{ backup_dir }}/{{ current_date }}psql_backup.tar.gz' '{{ azure_blob_sas_url_postgres }}' --recursive=true"
+        cmd: "azcopy copy '{{ backup_dir }}/{{ current_date }}psql_backup.tar.gz' '{{ azure_blob_sas_url_postgres }}' --recursive=true"
       become: yes
