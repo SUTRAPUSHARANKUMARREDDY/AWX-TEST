@@ -23,29 +23,29 @@
         - mongo
         - psql # Creates subdirectories for each database type
 
-    - name: Dump MySQL databases excluding orchestrator10
-      shell: |
-        USER="mysql"
-        PASSWORD="Gaian-M0bIusP#9Pr0d"
-        HOST="mobius-prod-mysql-new-flexible-server.mysql.database.azure.com"
-        databases=$(mysql -u $USER -p"$PASSWORD" -h $HOST -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys|orchestrator10)")
-        for db in $databases; do
-          echo "Dumping database: $db"
-          mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "{{ backup_dir }}/mysql/$db.sql"
-        done
-      args:
-        executable: /bin/bash # Dumps MySQL databases excluding 'orchestrator10'
+    # - name: Dump MySQL databases excluding orchestrator10
+    #   shell: |
+    #     USER="mysql"
+    #     PASSWORD="Gaian-M0bIusP#9Pr0d"
+    #     HOST="mobius-prod-mysql-new-flexible-server.mysql.database.azure.com"
+    #     databases=$(mysql -u $USER -p"$PASSWORD" -h $HOST -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys|orchestrator10)")
+    #     for db in $databases; do
+    #       echo "Dumping database: $db"
+    #       mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "{{ backup_dir }}/mysql/$db.sql"
+    #     done
+    #   args:
+    #     executable: /bin/bash # Dumps MySQL databases excluding 'orchestrator10'
 
-    - name: Dump MongoDB databases excluding TargettingFramework
-      shell: |
-        URI="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0"
-        EXCLUDE_DB="TargettingFramework"
-        DATABASES=$(mongo "$URI" --quiet --eval "db.getMongo().getDBNames().filter(dbName => dbName !== '$EXCLUDE_DB').join(' ');" )
-        for DB in $DATABASES; do
-          mongodump --uri="$URI" --db="$DB" --out="{{ backup_dir }}/mongo/"
-        done
-      args:
-        executable: /bin/bash # Dumps MongoDB databases excluding 'TargettingFramework'
+    # - name: Dump MongoDB databases excluding TargettingFramework
+    #   shell: |
+    #     URI="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0"
+    #     EXCLUDE_DB="TargettingFramework"
+    #     DATABASES=$(mongo "$URI" --quiet --eval "db.getMongo().getDBNames().filter(dbName => dbName !== '$EXCLUDE_DB').join(' ');" )
+    #     for DB in $DATABASES; do
+    #       mongodump --uri="$URI" --db="$DB" --out="{{ backup_dir }}/mongo/"
+    #     done
+    #   args:
+    #     executable: /bin/bash # Dumps MongoDB databases excluding 'TargettingFramework'
 
     - name: Get list of all non-default PostgreSQL databases
       shell: psql -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -d postgres -t -c "SELECT datname FROM pg_database WHERE datistemplate = false AND datname NOT IN ('postgres', 'template0', 'template1');"
