@@ -48,8 +48,8 @@
         executable: /bin/bash # Dumps MongoDB databases excluding 'TargettingFramework'
 
     - name: Get list of all non-default PostgreSQL databases
-      shell: psql -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -t -c "SELECT datname FROM pg_database WHERE datistemplate = false AND datname NOT IN ('postgres', 'template0', 'template1');"
-      register: postgres_databases # Registers the output to use in the next task
+      shell: psql -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -d postgres -t -c "SELECT datname FROM pg_database WHERE datistemplate = false AND datname NOT IN ('postgres', 'template0', 'template1');"
+      register: postgres_databases
       environment:
         PGPASSWORD: "Gaian$%Mobiu$Pr0d"
 
