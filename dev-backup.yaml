@@ -23,39 +23,40 @@
         - mongo
         - psql # Creates subdirectories for each database type
 
-    # - name: Dump MySQL databases excluding orchestrator10
-    #   shell: |
-    #     USER="mysql"
-    #     PASSWORD="Gaian-M0bIusP#9Pr0d"
-    #     HOST="mobius-prod-mysql-new-flexible-server.mysql.database.azure.com"
-    #     databases=$(mysql -u $USER -p"$PASSWORD" -h $HOST -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys|orchestrator10)")
-    #     for db in $databases; do
-    #       echo "Dumping database: $db"
-    #       mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "{{ backup_dir }}/mysql/$db.sql"
-    #     done
-    #   args:
-    #     executable: /bin/bash # Dumps MySQL databases excluding 'orchestrator10'
+    - name: Dump MySQL databases excluding orchestrator10
+      shell: |
+        USER="mysql"
+        PASSWORD="Gaian-M0bIusP#9Pr0d"
+        HOST="mobius-prod-mysql-new-flexible-server.mysql.database.azure.com"
+        databases=$(mysql -u $USER -p"$PASSWORD" -h $HOST -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys|orchestrator10)")
+        for db in $databases; do
+          echo "Dumping database: $db"
+          mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "{{ backup_dir }}/mysql/$db.sql"
+        done
+      args:
+        executable: /bin/bash # Dumps MySQL databases excluding 'orchestrator10'
 
-    # - name: Dump MongoDB databases excluding TargettingFramework
-    #   shell: |
-    #     URI="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0"
-    #     EXCLUDE_DB="TargettingFramework"
-    #     DATABASES=$(mongo "$URI" --quiet --eval "db.getMongo().getDBNames().filter(dbName => dbName !== '$EXCLUDE_DB').join(' ');" )
-    #     for DB in $DATABASES; do
-    #       mongodump --uri="$URI" --db="$DB" --out="{{ backup_dir }}/mongo/"
-    #     done
-    #   args:
-    #     executable: /bin/bash # Dumps MongoDB databases excluding 'TargettingFramework'
+    - name: Dump MongoDB databases excluding TargettingFramework
+      shell: |
+        echo "Databases to backup: $DATABASES"
+        URI="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0"
+        EXCLUDE_DB="TargettingFramework"
+        DATABASES=$(mongo "$URI" --quiet --eval "db.getMongo().getDBNames().filter(dbName => dbName !== '$EXCLUDE_DB').join(' ');" )
+        echo "Databases to backup: $DATABASES"
+        for DB in $DATABASES; do
+          mongodump --uri="$URI" --db="$DB" --out="{{ backup_dir }}/mongo/"
+        done
+        echo "Dumping database: $DB"
+      args:
+        executable: /bin/bash # Dumps MongoDB databases excluding 'TargettingFramework'
 
-    - name: Get list of all non-default PostgreSQL databases
-      shell: psql -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -d postgres -t -c "SELECT datname FROM pg_database WHERE datistemplate = false AND datname NOT IN ('postgres', 'template0', 'template1');"
-      register: postgres_databases
-      environment:
-        PGPASSWORD: "Gaian$%Mobiu$Pr0d"
+    - name: Dump PostgreSQL databases
+      shell: |
+        pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft targettingframework -f "{{ backup_dir }}/psql/targettingframework_backup.tar"
+        pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft grafana -f "{{ backup_dir }}/psql/grafana_backup.tar"
+        pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft orchestrator1 -f "{{ backup_dir }}/psql/orchestrator1_backup.tar"
+        pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft camunda_history -f "{{ backup_dir }}/psql/camunda_history_backup.tar"
 
-    - name: Dump each PostgreSQL database into its own file
-      shell: pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft "{{ item | trim }}" -f "{{ backup_dir }}/psql/{{ item | trim }}_backup.tar"
-      loop: "{{ postgres_databases.stdout_lines }}"
       environment:
         PGPASSWORD: "Gaian$%Mobiu$Pr0d"
 
