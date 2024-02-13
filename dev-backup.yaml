@@ -9,49 +9,49 @@
     azure_blob_sas_url_postgres: "https://prodmobiusdbbkp.blob.core.windows.net/postgresdb?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
 
   tasks:
-    - name: Ensure backup directory exists
-      ansible.builtin.file:
-        path: "{{ backup_dir }}"
-        state: directory
+    # - name: Ensure backup directory exists
+    #   ansible.builtin.file:
+    #     path: "{{ backup_dir }}"
+    #     state: directory
 
-    - name: Ensure subdirectories for each database type exist
-      ansible.builtin.file:
-        path: "{{ backup_dir }}/{{ item }}"
-        state: directory
-      loop:
-        - mysql
-        - mongo
-        - psql
+    # - name: Ensure subdirectories for each database type exist
+    #   ansible.builtin.file:
+    #     path: "{{ backup_dir }}/{{ item }}"
+    #     state: directory
+    #   loop:
+    #     - mysql
+    #     - mongo
+    #     - psql
 
-    - name: Dump MySQL databases
-      shell: |
-        USER="mysql"
-        PASSWORD="Gaian-M0bIusP#9Pr0d"
-        HOST="mobius-prod-mysql-new-flexible-server.mysql.database.azure.com"
-        databases=$(mysql -u $USER -p"$PASSWORD" -h $HOST -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys)")
-        for db in $databases; do
-          echo "Dumping database: $db"
-          mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "{{ backup_dir }}/mysql/$db.sql"
-        done
-      args:
-        executable: /bin/bash
+    # - name: Dump MySQL databases
+    #   shell: |
+    #     USER="mysql"
+    #     PASSWORD="Gaian-M0bIusP#9Pr0d"
+    #     HOST="mobius-prod-mysql-new-flexible-server.mysql.database.azure.com"
+    #     databases=$(mysql -u $USER -p"$PASSWORD" -h $HOST -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys)")
+    #     for db in $databases; do
+    #       echo "Dumping database: $db"
+    #       mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "{{ backup_dir }}/mysql/$db.sql"
+    #     done
+    #   args:
+    #     executable: /bin/bash
 
-    - name: Dump MongoDB databases
-      shell: mongodump --uri="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0" --out="{{ backup_dir }}/mongo/"
+    # - name: Dump MongoDB databases
+    #   shell: mongodump --uri="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0" --out="{{ backup_dir }}/mongo/"
 
 
-    - name: Dump PostgreSQL databases
-      shell: |
-        pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft targettingframework -f "{{ backup_dir }}/psql/targettingframework_backup.tar"
-        pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft grafana -f "{{ backup_dir }}/psql/grafana_backup.tar"
-      environment:
-        PGPASSWORD: "Gaian$%Mobiu$Pr0d"
+    # - name: Dump PostgreSQL databases
+    #   shell: |
+    #     pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft targettingframework -f "{{ backup_dir }}/psql/targettingframework_backup.tar"
+    #     pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft grafana -f "{{ backup_dir }}/psql/grafana_backup.tar"
+    #   environment:
+    #     PGPASSWORD: "Gaian$%Mobiu$Pr0d"
 
-    - name: Compress MySQL backups
-      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz" -C "{{ backup_dir }}" mysql
+    # - name: Compress MySQL backups
+    #   shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz" -C "{{ backup_dir }}" mysql
 
-    - name: Compress MongoDB backups
-      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mongo_backup.tar.gz" -C "{{ backup_dir }}" mongo
+    # - name: Compress MongoDB backups
+    #   shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mongo_backup.tar.gz" -C "{{ backup_dir }}" mongo
 
     - name: Compress PostgreSQL backups
       shell: tar -czvf "{{ backup_dir }}/{{ current_date }}psql_backup.tar.gz" -C "{{ backup_dir }}" psql
