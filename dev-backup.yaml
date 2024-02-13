@@ -54,10 +54,11 @@
         PGPASSWORD: "Gaian$%Mobiu$Pr0d"
 
     - name: Dump each PostgreSQL database into its own file
-      shell: pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft "{{ item }}" -f "{{ backup_dir }}/psql/{{ item }}_backup.tar"
+      shell: pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft "{{ item | trim }}" -f "{{ backup_dir }}/psql/{{ item | trim }}_backup.tar"
       loop: "{{ postgres_databases.stdout_lines }}"
       environment:
         PGPASSWORD: "Gaian$%Mobiu$Pr0d"
+
 
     # - name: Compress MySQL backups
     #   shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz" -C "{{ backup_dir }}" mysql # Compresses MySQL backups
