@@ -1,10 +1,10 @@
 ---
-- name: Backup TargettingFramework Databases and Upload to Azure Blob
+- name: Backup orchestrator10 Databases and Upload to Azure Blob
   hosts: all
   vars:
     current_date: "{{ lookup('pipe', 'date +%b-%d_') | trim }}"
     backup_dir: "/home/dump/{{ current_date }}DB_Backup"
-    azure_blob_sas_url_mongodb: "https://prodmobiusdbbkp.blob.core.windows.net/mongodb?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
+    azure_blob_sas_url_mysql: "https://prodmobiusdbbkp.blob.core.windows.net/mysqlmanaged?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
 
   tasks:
     - name: Ensure backup directory exists
@@ -12,26 +12,28 @@
         path: "{{ backup_dir }}"
         state: directory
 
-    - name: Ensure subdirectories for TargettingFramework database types exist
+    - name: Ensure subdirectories for orchestrator10 database types exist
       ansible.builtin.file:
         path: "{{ backup_dir }}/{{ item }}"
         state: directory
       loop:
-        - mongo_TargettingFramework
+        - mysql_orchestrator10
+        
+    - name: Dump MySQL database 'orchestrator10'
+      shell: |
+        USER="mysql"
+        PASSWORD="Gaian-M0bIusP#9Pr0d"
+        HOST="mobius-prod-mysql-new-flexible-server.mysql.database.azure.com"
+        DATABASE="orchestrator10"
+        echo "Dumping database: $DATABASE"
+        mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$DATABASE" > "{{ backup_dir }}/mysql_orchestrator10/$DATABASE.sql"
+      args:
+        executable: /bin/bash
 
-    # - name: Dump MongoDB database 'TargettingFramework'
-    #   shell: |
-    #     URI="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0"
-    #     DATABASE="TargettingFramework"
-    #     BACKUP_DIR="{{ backup_dir }}/mongo_TargettingFramework"
-    #     mongodump --uri="$URI" --db="$DATABASE" --out="$BACKUP_DIR/$DATABASE"
-    #   args:
-    #     executable: /bin/bash
+    - name: Compress MySQL orchestrator10 backup
+      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mysql_orchestrator10_backup.tar.gz" -C "{{ backup_dir }}" mysql_orchestrator10
 
-    - name: Compress MongoDB TargettingFramework backup
-      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mongo_TargettingFramework_backup.tar.gz" -C "{{ backup_dir }}" mongo_TargettingFramework
-
-    - name: Upload MongoDB TargettingFramework backup to Azure Blob using azcopy
+    - name: Upload MySQL orchestrator10 backup to Azure Blob using azcopy
       ansible.builtin.command:
-        cmd: "sudo azcopy copy '{{ backup_dir }}/{{ current_date }}mongo_TargettingFramework_backup.tar.gz' '{{ azure_blob_sas_url_mongodb }}' --recursive=true"
+        cmd: "sudo azcopy copy '{{ backup_dir }}/{{ current_date }}mysql_orchestrator10_backup.tar.gz' '{{ azure_blob_sas_url_mysql }}' --recursive=true"
       become: yes
