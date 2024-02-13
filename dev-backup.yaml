@@ -1,18 +1,18 @@
 ---
-- name: Backup Databases and Upload to Azure Blob
-  hosts: all
-  vars:
-    current_date: "{{ lookup('pipe', 'date +%Y %b %d') | trim }}"
-    backup_dir: "/home/dump/{{ current_date }}_DB_Backup"
-    azure_blob_sas_url_mysql: "https://prodmobiusdbbkp.blob.core.windows.net/mysqlmanaged?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
-    azure_blob_sas_url_mongodb: "https://prodmobiusdbbkp.blob.core.windows.net/mongodb?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
-    azure_blob_sas_url_postgres: "https://prodmobiusdbbkp.blob.core.windows.net/postgresdb?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
+- name: Backup Databases and Upload to Azure Blob # Playbook description
+  hosts: all # Specifies that the playbook runs on all hosts
+  vars: # Variables section
+    current_date: "{{ lookup('pipe', 'date +%Y %b %d') | trim }}" # Sets the current date in the format "YYYY MMM DD"
+    backup_dir: "/home/dump/{{ current_date }}_DB_Backup" # Sets the backup directory path using the current date
+    azure_blob_sas_url_mysql: "https://prodmobiusdbbkp.blob.core.windows.net/mysqlmanaged?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs=" # Azure Blob Storage SAS URL for MySQL backups
+    azure_blob_sas_url_mongodb: "https://prodmobiusdbbkp.blob.core.windows.net/mongodb?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs=" # Azure Blob Storage SAS URL for MongoDB backups
+    azure_blob_sas_url_postgres: "https://prodmobiusdbbkp.blob.core.windows.net/postgresdb?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs=" # Azure Blob Storage SAS URL for PostgreSQL backups
 
   tasks:
-    - name: Ensure backup directory exists
-      ansible.builtin.file:
-        path: "{{ backup_dir }}"
-        state: directory
+    - name: Ensure backup directory exists # Task description
+      ansible.builtin.file: # Uses the file module
+        path: "{{ backup_dir }}" # Directory to create
+        state: directory # Ensures the path is a directory
 
     - name: Ensure subdirectories for each database type exist
       ansible.builtin.file:
@@ -21,7 +21,7 @@
       loop:
         - mysql
         - mongo
-        - psql
+        - psql # Creates subdirectories for each database type
 
     - name: Dump MySQL databases excluding orchestrator10
       shell: |
@@ -34,9 +34,9 @@
           mysqldump -u $USER -p"$PASSWORD" -h $HOST --set-gtid-purged=OFF --skip-lock-tables --databases "$db" > "{{ backup_dir }}/mysql/$db.sql"
         done
       args:
-        executable: /bin/bash
+        executable: /bin/bash # Dumps MySQL databases excluding 'orchestrator10'
 
-      - name: Dump MongoDB databases excluding TargettingFramework
+    - name: Dump MongoDB databases excluding TargettingFramework
       shell: |
         URI="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0"
         EXCLUDE_DB="TargettingFramework"
@@ -45,40 +45,40 @@
           mongodump --uri="$URI" --db="$DB" --out="{{ backup_dir }}/mongo/"
         done
       args:
-        executable: /bin/bash
+        executable: /bin/bash # Dumps MongoDB databases excluding 'TargettingFramework'
 
     - name: Get list of all non-default PostgreSQL databases
       shell: psql -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -t -c "SELECT datname FROM pg_database WHERE datistemplate = false AND datname NOT IN ('postgres', 'template0', 'template1');"
-      register: postgres_databases
+      register: postgres_databases # Registers the output to use in the next task
       environment:
         PGPASSWORD: "Gaian$%Mobiu$Pr0d"
 
     - name: Dump each PostgreSQL database into its own file
       shell: pg_dump -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -Ft {{ item.trim }} -f "{{ backup_dir }}/psql/{{ item.trim }}_backup.tar"
-      loop: "{{ postgres_databases.stdout_lines }}"
+      loop: "{{ postgres_databases.stdout_lines }}" # Loops through the list of non-default databases
       environment:
-        PGPASSWORD: "Gaian$%Mobiu$Pr0d"
+        PGPASSWORD: "Gaian$%Mobiu$Pr0d" # Dumps each PostgreSQL database into its own file
 
     - name: Compress MySQL backups
-      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz" -C "{{ backup_dir }}" mysql
+      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz" -C "{{ backup_dir }}" mysql # Compresses MySQL backups
 
     - name: Compress MongoDB backups
-      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mongo_backup.tar.gz" -C "{{ backup_dir }}" mongo
+      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}mongo_backup.tar.gz" -C "{{ backup_dir }}" mongo # Compresses MongoDB backups
 
     - name: Compress PostgreSQL backups
-      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}psql_backup.tar.gz" -C "{{ backup_dir }}" psql
+      shell: tar -czvf "{{ backup_dir }}/{{ current_date }}psql_backup.tar.gz" -C "{{ backup_dir }}" psql # Compresses PostgreSQL backups
 
     - name: Upload MySQL backup to Azure Blob using azcopy
       ansible.builtin.command:
         cmd: "sudo azcopy copy '{{ backup_dir }}/{{ current_date }}mysql_backup.tar.gz' '{{ azure_blob_sas_url_mysql }}' --recursive=true"
-      become: yes
+      become: yes # Uploads MySQL backup to Azure Blob
 
     - name: Upload MongoDB backup to Azure Blob using azcopy
       ansible.builtin.command:
         cmd: "sudo azcopy copy '{{ backup_dir }}/{{ current_date }}mongo_backup.tar.gz' '{{ azure_blob_sas_url_mongodb }}' --recursive=true"
-      become: yes
+      become: yes # Uploads MongoDB backup to Azure Blob
 
     - name: Upload PostgreSQL backup to Azure Blob using azcopy
       ansible.builtin.command:
         cmd: "sudo azcopy copy '{{ backup_dir }}/{{ current_date }}psql_backup.tar.gz' '{{ azure_blob_sas_url_postgres }}' --recursive=true"
-      become: yes
+      become: yes # Uploads PostgreSQL backup to Azure Blob
