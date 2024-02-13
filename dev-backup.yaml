@@ -40,12 +40,13 @@
       shell: |
         URI="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0"
         EXCLUDE_DB="TargettingFramework"
+        BACKUP_DIR="{{ backup_dir }}/mongo"
         echo "Connecting to MongoDB URI: $URI"
-        DATABASES=$(mongo "$URI" --quiet --eval "db.getMongo().getDBNames().filter(dbName => dbName !== '$EXCLUDE_DB').join(' ');")
+        DATABASES=$(mongosh "$URI" --quiet --eval "db.getMongo().getDBNames().filter(dbName => dbName !== '$EXCLUDE_DB').join(' ');")
         echo "Databases to backup after excluding $EXCLUDE_DB: $DATABASES"
         for DB in $DATABASES; do
           echo "Starting dump for database: $DB"
-          mongodump --uri="$URI" --db="$DB" --out="{{ backup_dir }}/mongo/$DB"
+          mongodump --uri="$URI" --db="$DB" --out="$BACKUP_DIR/$DB"
           if [ $? -eq 0 ]; then
             echo "Successfully dumped database: $DB"
           else
@@ -60,7 +61,6 @@
     - name: Debug output for MongoDB dump task
       debug:
         msg: "{{ mongo_dump_result.stdout_lines }}"
-
 
     # - name: Dump PostgreSQL databases
     #   shell: |
