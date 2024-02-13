@@ -2,8 +2,8 @@
 - name: Backup Databases and Upload to Azure Blob
   hosts: all
   vars:
-    current_date: "{{ lookup('pipe', 'date +%Y-%m-%d_') | trim }}"
-    backup_dir: "/home/dump/{{ current_date }}DB_Backup"
+    current_date: "{{ lookup('pipe', 'date +%Y %b %d') | trim }}"
+    backup_dir: "/home/dump/{{ current_date }}_DB_Backup"
     azure_blob_sas_url_mysql: "https://prodmobiusdbbkp.blob.core.windows.net/mysqlmanaged?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
     azure_blob_sas_url_mongodb: "https://prodmobiusdbbkp.blob.core.windows.net/mongodb?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
     azure_blob_sas_url_postgres: "https://prodmobiusdbbkp.blob.core.windows.net/postgresdb?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs="
