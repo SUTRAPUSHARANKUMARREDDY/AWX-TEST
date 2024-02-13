@@ -2,7 +2,7 @@
 - name: Backup Databases and Upload to Azure Blob # Playbook description
   hosts: all # Specifies that the playbook runs on all hosts
   vars: # Variables section
-    current_date: "{{ lookup('pipe', 'date +%Y %b %d') | trim }}" # Sets the current date in the format "YYYY MMM DD"
+    current_date: "{{ lookup('pipe', 'date +%%Y %%b %%d') | trim }}" # Sets the current date in the format "YYYY MMM DD"
     backup_dir: "/home/dump/{{ current_date }}_DB_Backup" # Sets the backup directory path using the current date
     azure_blob_sas_url_mysql: "https://prodmobiusdbbkp.blob.core.windows.net/mysqlmanaged?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs=" # Azure Blob Storage SAS URL for MySQL backups
     azure_blob_sas_url_mongodb: "https://prodmobiusdbbkp.blob.core.windows.net/mongodb?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2043-10-20T01:01:06Z&st=2023-10-19T17:01:06Z&spr=https&sig=3agOLgIiDfK9DFCu%2Fx3WwCBq%2BEExHWExCoOEhA09Dgs=" # Azure Blob Storage SAS URL for MongoDB backups
