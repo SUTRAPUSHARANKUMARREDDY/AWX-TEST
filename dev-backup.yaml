@@ -36,8 +36,16 @@
       args:
         executable: /bin/bash
 
-    - name: Dump MongoDB databases excluding TargettingFramework
-      shell: mongodump --uri="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0" --excludeDatabase=TargettingFramework --out="{{ backup_dir }}/mongo/"
+      - name: Dump MongoDB databases excluding TargettingFramework
+      shell: |
+        URI="mongodb://mobiusprod:Kh3M459za*GMGb@172.16.8.6:27017,172.16.8.40:27017,172.16.8.41:27017/?authSource=admin&replicaSet=rs0"
+        EXCLUDE_DB="TargettingFramework"
+        DATABASES=$(mongo "$URI" --quiet --eval "db.getMongo().getDBNames().filter(dbName => dbName !== '$EXCLUDE_DB').join(' ');" )
+        for DB in $DATABASES; do
+          mongodump --uri="$URI" --db="$DB" --out="{{ backup_dir }}/mongo/"
+        done
+      args:
+        executable: /bin/bash
 
     - name: Get list of all non-default PostgreSQL databases
       shell: psql -h mobius-prod-postgres-flexible-server.postgres.database.azure.com -U mobius -t -c "SELECT datname FROM pg_database WHERE datistemplate = false AND datname NOT IN ('postgres', 'template0', 'template1');"
